@@ -1,3 +1,6 @@
+# backend
+backend/fridge.db
+
 # Logs
 logs
 *.log
