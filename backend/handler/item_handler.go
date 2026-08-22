@@ -15,8 +15,7 @@ func HandleItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		// 登録日時（created_date）の新しい順に並び替え（ソート）して取得
-		rows, err := database.DB.Query("SELECT id, name, quantity, category, expiration_date, created_date FROM items ORDER BY created_date DESC")
+		rows, err := database.DB.Query("SELECT id, name, quantity, category, expiration_date, created_date FROM items ORDER BY expiration_date DESC")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
