@@ -9,13 +9,9 @@ import (
 
 var DB *sql.DB
 
-func InitDB() {
-	var err error
-	DB, err = sql.Open("sqlite3", "./fridge.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
+// CreateTables はitemsテーブルを作成する。本番用DB・テスト用インメモリDBの
+// 両方から呼び出し、スキーマ定義を1箇所に集約するために切り出している。
+func CreateTables(db *sql.DB) error {
 	createTableSQL := `CREATE TABLE IF NOT EXISTS items (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
@@ -25,8 +21,18 @@ func InitDB() {
 		created_date DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 
-	_, err = DB.Exec(createTableSQL)
+	_, err := db.Exec(createTableSQL)
+	return err
+}
+
+func InitDB() {
+	var err error
+	DB, err = sql.Open("sqlite3", "./fridge.db")
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := CreateTables(DB); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -21,15 +21,7 @@ func newTestDB(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	createTableSQL := `CREATE TABLE items (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT,
-		quantity INTEGER,
-		category TEXT,
-		expiration_date TEXT,
-		created_date DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-	if _, err := db.Exec(createTableSQL); err != nil {
+	if err := database.CreateTables(db); err != nil {
 		t.Fatal(err)
 	}
 
