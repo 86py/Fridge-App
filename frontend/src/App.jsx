@@ -30,12 +30,24 @@ function App() {
   }
 
   const handleConsume = async (id, quantity) => {
-    await fetch('http://localhost:8080/items/edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, quantity }),
-    })
-    fetchItems()
+    try {
+      const response = await fetch('http://localhost:8080/items/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, quantity }),
+      })
+
+      if (!response.ok) {
+        console.error('消費処理に失敗しました:', await response.text())
+        return false
+      }
+
+      fetchItems()
+      return true
+    } catch (err) {
+      console.error('消費処理に失敗しました:', err)
+      return false
+    }
   }
 
   return (

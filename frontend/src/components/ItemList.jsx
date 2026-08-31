@@ -10,6 +10,18 @@ export function ItemList({ items, onConsume }) {
     setConsumeQuantities((prev) => ({ ...prev, [item.id]: clamped }))
   }
 
+  const handleConsumeClick = async (item) => {
+    const succeeded = await onConsume(item.id, getConsumeQuantity(item))
+    if (succeeded) {
+      // 消費が成功したら入力欄を初期値に戻す
+      setConsumeQuantities((prev) => {
+        const next = { ...prev }
+        delete next[item.id]
+        return next
+      })
+    }
+  }
+
   return (
     <div>
       <h3>在庫一覧</h3>
@@ -42,7 +54,7 @@ export function ItemList({ items, onConsume }) {
                 >
                   ＋
                 </button>
-                <button type="button" onClick={() => onConsume(item.id, getConsumeQuantity(item))}>
+                <button type="button" onClick={() => handleConsumeClick(item)}>
                   消費する
                 </button>
               </div>
