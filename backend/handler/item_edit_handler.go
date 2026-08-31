@@ -37,9 +37,14 @@ func HandleItemsEdit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 2. 減算後の数量で分岐（0以下になるなら削除、そうでなければ更新）
-		// req.Quantityが現在の在庫を考慮せず判定していたバグを修正し、
-		// 減算後の実際の値で0以下かどうかを判定するようにした
+		// 2. 在庫を超える消費はエラーにする（押せなくする制御はフロント側の責務とし、
+		// サーバー側は不正なリクエストの最終防衛ラインとしてのみチェックする）
+		if req.Quantity > quantity {
+			http.Error(w, "quantity exceeds current stock", http.StatusBadRequest)
+			return
+		}
+
+		// 3. 減算後の数量で分岐（0になるなら削除、そうでなければ更新）
 		newQuantity := quantity - req.Quantity
 		if newQuantity > 0 {
 			_, err = database.DB.Exec("UPDATE items SET quantity = ? WHERE id = ?", newQuantity, req.ID)

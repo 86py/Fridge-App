@@ -101,20 +101,23 @@ func TestHandleItemsEdit_DeletesItemWhenFullyConsumed(t *testing.T) {
 	}
 }
 
-func TestHandleItemsEdit_DeletesItemWhenOverConsumed(t *testing.T) {
+func TestHandleItemsEdit_RejectsQuantityExceedingStock(t *testing.T) {
 	newTestDB(t)
 	id := insertTestItem(t, 3)
 
 	rr := postDecrementRequest(t, id, 10)
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Fatalf("ステータスコードが期待値と異なります: got %v want %v", status, http.StatusOK)
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Fatalf("ステータスコードが期待値と異なります: got %v want %v", status, http.StatusBadRequest)
 	}
 
 	var quantity int
 	err := database.DB.QueryRow("SELECT quantity FROM items WHERE id = ?", id).Scan(&quantity)
-	if err == nil {
-		t.Errorf("在庫を超えて消費した場合にレコードが削除されていません: quantity=%v", quantity)
+	if err != nil {
+		t.Fatalf("レコードが見つかりません: %v", err)
+	}
+	if quantity != 3 {
+		t.Errorf("在庫を超える消費を拒否した際に数量が変わっています: got %v want %v", quantity, 3)
 	}
 }
 
