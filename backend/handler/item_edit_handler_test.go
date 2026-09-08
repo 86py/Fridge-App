@@ -44,6 +44,24 @@ func insertTestItem(t *testing.T, quantity int) int64 {
 	return id
 }
 
+// 期限日を指定して食材を登録するためのヘルパー。
+// insertTestItem は期限固定(2026-12-31)のため、並び順のテストでは使えない。
+func insertTestItemWithExpiration(t *testing.T, expirationDate string) int64 {
+	t.Helper()
+	res, err := database.DB.Exec(
+		"INSERT INTO items (name, quantity, category, expiration_date) VALUES (?, ?, ?, ?)",
+		"テスト食材", 1, "野菜", expirationDate,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
 func postDecrementRequest(t *testing.T, id int64, quantity int) *httptest.ResponseRecorder {
 	t.Helper()
 	body, _ := json.Marshal(map[string]int{"id": int(id), "quantity": quantity})

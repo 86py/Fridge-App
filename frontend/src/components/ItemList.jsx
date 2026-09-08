@@ -1,4 +1,10 @@
 import { useState } from 'react'
+import { getExpirationStatus, EXPIRATION_STATUS } from '../utils/expiration'
+
+const EXPIRATION_STYLES = {
+  [EXPIRATION_STATUS.EXPIRED]: { color: '#b00020', fontWeight: 'bold' },
+  [EXPIRATION_STATUS.SOON]: { color: '#b26a00', fontWeight: 'bold' },
+}
 
 export function ItemList({ items, onConsume }) {
   const [consumeQuantities, setConsumeQuantities] = useState({})
@@ -32,7 +38,16 @@ export function ItemList({ items, onConsume }) {
           {items.map((item) => (
             <li key={item.id} style={{ marginBottom: '8px' }}>
               <strong>{item.name}</strong> （{item.category}） - 数量: {item.quantity}
-              {item.expiration_date && ` / 賞味期限: ${item.expiration_date}`}
+              {item.expiration_date && (() => {
+                const status = getExpirationStatus(item.expiration_date)
+                return (
+                  <span style={EXPIRATION_STYLES[status]}>
+                    {` / 賞味期限: ${item.expiration_date}`}
+                    {status === EXPIRATION_STATUS.EXPIRED && ' [期限切れ]'}
+                    {status === EXPIRATION_STATUS.SOON && ' [期限間近]'}
+                  </span>
+                )
+              })()}
               <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <button
                   type="button"

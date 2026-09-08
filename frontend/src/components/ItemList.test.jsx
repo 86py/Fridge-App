@@ -55,3 +55,34 @@ describe('ItemList の数量クランプ', () => {
     expect(onConsume).toHaveBeenCalledWith(1, 2)
   })
 })
+
+// 期限切れの食材は見た目で分かるようにする必要がある。
+// SOON（3日以内）は「今日」からの相対日付になるためハードコード日付だと
+// 実行日によって結果が変わり不安定になる。境界値の判定ロジック自体は
+// expiration.test.js 側で固定した基準日を使って検証するため、ここでは
+// 実行日に依存しないEXPIRED・未設定のケースのみ確認する。
+describe('ItemList の賞味期限表示', () => {
+  it('賞味期限切れの商品には「期限切れ」の表示が、警告色付きで出る', () => {
+    const pastItem = { id: 2, name: '牛乳', quantity: 1, category: '乳製品', expiration_date: '2000-01-01' }
+    render(<ItemList items={[pastItem]} onConsume={vi.fn()} />)
+    const label = screen.getByText(/期限切れ/)
+    expect(label).toBeInTheDocument()
+    expect(label).toHaveStyle({ color: '#b00020' })
+  })
+
+  it('賞味期限が未設定の商品には期限表示自体が出ない', () => {
+    const noDateItem = { id: 3, name: '塩', quantity: 1, category: '調味料', expiration_date: '' }
+    render(<ItemList items={[noDateItem]} onConsume={vi.fn()} />)
+    expect(screen.queryByText(/賞味期限/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/期限切れ|期限間近/)).not.toBeInTheDocument()
+  })
+
+  it('十分先が期限の商品には警告色も「期限切れ/期限間近」の表示も付かない', () => {
+    const farFutureItem = { id: 4, name: '缶詰', quantity: 1, category: '保存食', expiration_date: '2099-01-01' }
+    render(<ItemList items={[farFutureItem]} onConsume={vi.fn()} />)
+    const label = screen.getByText(/賞味期限/)
+    expect(label).not.toHaveStyle({ color: '#b00020' })
+    expect(label).not.toHaveStyle({ color: '#b26a00' })
+    expect(screen.queryByText(/期限切れ|期限間近/)).not.toBeInTheDocument()
+  })
+})

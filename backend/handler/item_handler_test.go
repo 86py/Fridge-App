@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fridge-backend/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,5 +31,35 @@ func TestHandleItemsOptions(t *testing.T) {
 	allowOrigin := rr.Header().Get("Access-Control-Allow-Origin")
 	if allowOrigin != "*" {
 		t.Errorf("CORSヘッダーが設定されていません: got %v want *", allowOrigin)
+	}
+}
+
+// 賞味期限が近いものほど先に消費すべきなので、一覧は期限の昇順で
+// 返る必要がある。わざと期限の新しい順にINSERTし、レスポンスが
+// 昇順（近い順）に並び替えられていることを検証する
+func TestHandleItems_ReturnsItemsOrderedByExpirationDateAscending(t *testing.T) {
+	newTestDB(t)
+
+	insertTestItemWithExpiration(t, "2026-12-31")
+	insertTestItemWithExpiration(t, "2026-01-01")
+	insertTestItemWithExpiration(t, "2026-06-15")
+
+	req, err := http.NewRequest("GET", "/items", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	HandleItems(rr, req)
+
+	var items []model.Item
+	if err := json.NewDecoder(rr.Body).Decode(&items); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"2026-01-01", "2026-06-15", "2026-12-31"}
+	for i, w := range want {
+		if items[i].ExpirationDate != w {
+			t.Errorf("並び順が期待値と異なります: got[%d]=%v want=%v", i, items[i].ExpirationDate, w)
+		}
 	}
 }
