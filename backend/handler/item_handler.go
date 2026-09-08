@@ -15,7 +15,7 @@ func HandleItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		rows, err := database.DB.Query("SELECT id, name, quantity, category, expiration_date, created_date FROM items ORDER BY expiration_date DESC")
+		rows, err := database.DB.Query("SELECT id, name, quantity, category, expiration_date, created_date FROM items ORDER BY expiration_date ASC")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
