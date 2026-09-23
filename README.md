@@ -1,6 +1,6 @@
 # Fridge App
 
-冷蔵庫の在庫管理アプリ。食材の登録・一覧表示を行う学習用プロジェクトです。
+冷蔵庫の在庫管理アプリ。食材の登録・一覧表示・消費に加え、作った料理と使った食材を記録できる学習用プロジェクトです。
 
 - `backend/`: Go製REST API（SQLite使用）
 - `frontend/`: React + Vite製SPA
@@ -26,13 +26,18 @@ go test ./...    # テスト実行
 cd frontend
 npm run dev      # 開発サーバー起動
 npm run build    # ビルド
+npm run test     # テスト実行 (Vitest)
 npm run lint      # Lint (oxlint)
 ```
 
 ## 現状の実装範囲
 
-- 実装済み: 食材の登録（`POST /items`）、一覧取得（`GET /items`、賞味期限降順）
-- 未実装: 更新・削除（PUT/DELETE）、入力バリデーション、認証
+- 実装済み:
+  - 食材の登録（`POST /items`）、一覧取得（`GET /items`、賞味期限昇順）
+  - 食材の消費（`POST /items/edit`）。消費後の数量が0以下ならレコード削除、在庫を超える消費は拒否
+  - 賞味期限が近い/切れた食材のハイライト表示
+  - 料理記録（`POST /dishes`・`GET /dishes`）。料理名・作った日・使った食材（複数）を1回の操作で登録し、対応する食材の在庫をまとめて消費する。料理カレンダーで日付ごとに振り返れる
+- 未実装: 食材・料理記録の更新・削除、認証
 - フロントエンドのAPI URLは`http://localhost:8080`にハードコード
 
 ## 注意点
