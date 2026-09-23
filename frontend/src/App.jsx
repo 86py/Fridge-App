@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { ItemForm } from './components/ItemForm'
 import { ItemList } from './components/ItemList'
+import { DishForm } from './components/DishForm'
+import { DishCalendar } from './components/DishCalendar'
 
 function App() {
   const [items, setItems] = useState([])
+  const [dishes, setDishes] = useState([])
 
   const fetchItems = async () => {
     try {
@@ -15,9 +18,20 @@ function App() {
     }
   }
 
-  // 画面を開いたときにデータを取得 
+  const fetchDishes = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/dishes')
+      const data = await response.json()
+      setDishes(data || [])
+    } catch (err) {
+      console.error('料理記録の取得に失敗しました:', err)
+    }
+  }
+
+  // 画面を開いたときにデータを取得
   useEffect(() => {
     fetchItems()
+    fetchDishes()
   }, [])
 
   const handleAdd = async (newItem) => {
@@ -50,11 +64,35 @@ function App() {
     }
   }
 
+  const handleCreateDish = async (newDish) => {
+    try {
+      const response = await fetch('http://localhost:8080/dishes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDish),
+      })
+
+      if (!response.ok) {
+        console.error('料理の記録に失敗しました:', await response.text())
+        return false
+      }
+
+      fetchItems()
+      fetchDishes()
+      return true
+    } catch (err) {
+      console.error('料理の記録に失敗しました:', err)
+      return false
+    }
+  }
+
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
       <h1>冷蔵庫の在庫管理アプリ 🧊</h1>
       <ItemForm onAdd={handleAdd} />
       <ItemList items={items} onConsume={handleConsume} />
+      <DishForm items={items} dishes={dishes} onCreateDish={handleCreateDish} />
+      <DishCalendar dishes={dishes} />
     </div>
   )
 }
