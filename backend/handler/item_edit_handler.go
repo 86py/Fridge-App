@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fridge-backend/database"
 	"net/http"
 )
@@ -29,30 +30,28 @@ func HandleItemsEdit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 1. 現在の数量を確認する
-		var quantity int
-		err := database.DB.QueryRow("SELECT quantity FROM items WHERE id = ?", req.ID).Scan(&quantity)
+		tx, err := database.DB.Begin()
 		if err != nil {
-			http.Error(w, "Item not found", http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// 2. 在庫を超える消費はエラーにする（押せなくする制御はフロント側の責務とし、
-		// サーバー側は不正なリクエストの最終防衛ラインとしてのみチェックする）
-		if req.Quantity > quantity {
-			http.Error(w, "quantity exceeds current stock", http.StatusBadRequest)
+		// 押せなくする制御はフロント側の責務とし、サーバー側(ConsumeItem)は
+		// 不正なリクエストの最終防衛ラインとしてのみチェックする
+		if err := database.ConsumeItem(tx, req.ID, req.Quantity); err != nil {
+			tx.Rollback()
+			switch {
+			case errors.Is(err, database.ErrItemNotFound):
+				http.Error(w, "Item not found", http.StatusNotFound)
+			case errors.Is(err, database.ErrInsufficientStock):
+				http.Error(w, "quantity exceeds current stock", http.StatusBadRequest)
+			default:
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 
-		// 3. 減算後の数量で分岐（0になるなら削除、そうでなければ更新）
-		newQuantity := quantity - req.Quantity
-		if newQuantity > 0 {
-			_, err = database.DB.Exec("UPDATE items SET quantity = ? WHERE id = ?", newQuantity, req.ID)
-		} else {
-			_, err = database.DB.Exec("DELETE FROM items WHERE id = ?", req.ID)
-		}
-
-		if err != nil {
+		if err := tx.Commit(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
