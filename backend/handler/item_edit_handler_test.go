@@ -19,6 +19,10 @@ func newTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// SQLiteのインメモリDBはコネクションごとに別実体になるため、プールが複数の
+	// 接続を張ると「別のインメモリDBを見てテーブルが無い」という事態が起きる。
+	// 単一コネクションに固定して常に同じインメモリDBを参照させる。
+	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { db.Close() })
 
 	if err := database.CreateTables(db); err != nil {

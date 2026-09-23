@@ -9,10 +9,10 @@ import (
 
 var DB *sql.DB
 
-// CreateTables はitemsテーブルを作成する。本番用DB・テスト用インメモリDBの
-// 両方から呼び出し、スキーマ定義を1箇所に集約するために切り出している。
+// CreateTables はitems/dishes/dish_ingredientsテーブルを作成する。本番用DB・
+// テスト用インメモリDBの両方から呼び出し、スキーマ定義を1箇所に集約するために切り出している。
 func CreateTables(db *sql.DB) error {
-	createTableSQL := `CREATE TABLE IF NOT EXISTS items (
+	createItemsTableSQL := `CREATE TABLE IF NOT EXISTS items (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		quantity INTEGER,
@@ -20,9 +20,36 @@ func CreateTables(db *sql.DB) error {
 		expiration_date TEXT,
 		created_date DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
+	if _, err := db.Exec(createItemsTableSQL); err != nil {
+		return err
+	}
 
-	_, err := db.Exec(createTableSQL)
-	return err
+	// dishesは「作った料理」の記録。同じ料理名を複数回作ることを許容するため
+	// nameにUNIQUE制約は付けない(日によって使う食材・量が変わりうるため)。
+	createDishesTableSQL := `CREATE TABLE IF NOT EXISTS dishes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		cooked_date TEXT NOT NULL,
+		created_date DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+	if _, err := db.Exec(createDishesTableSQL); err != nil {
+		return err
+	}
+
+	// dish_ingredientsは1つのdishに紐づく「使った食材の内訳」。item_idではなく
+	// item_nameのスナップショットを持つ。消費によりitemsレコードが削除され得るため、
+	// IDだけ持つと参照が宙に浮いてしまう。
+	createDishIngredientsTableSQL := `CREATE TABLE IF NOT EXISTS dish_ingredients (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		dish_id INTEGER NOT NULL,
+		item_name TEXT NOT NULL,
+		quantity INTEGER NOT NULL
+	);`
+	if _, err := db.Exec(createDishIngredientsTableSQL); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func InitDB() {

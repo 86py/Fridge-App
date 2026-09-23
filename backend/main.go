@@ -15,6 +15,7 @@ func main() {
 	// ルーティング設定
 	http.HandleFunc("/items", handler.HandleItems)
 	http.HandleFunc("/items/edit", handler.HandleItemsEdit)
+	http.HandleFunc("/dishes", handler.HandleDishes)
 	log.Println("Backend server started at :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
